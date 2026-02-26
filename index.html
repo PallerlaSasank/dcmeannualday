@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CME CELEBRATIONS</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
+
+body{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:radial-gradient(circle at top,#0f2027,#203a43,#000);
+color:white;
+overflow:hidden;
+transition:1s;
+}
+
+/* GLASS CARD */
+.card{
+width:92%;
+max-width:600px;
+padding:40px;
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(20px);
+border-radius:25px;
+text-align:center;
+box-shadow:0 0 60px rgba(255,215,0,0.4);
+position:relative;
+z-index:2;
+animation:fadeUp 1.5s ease;
+}
+
+@keyframes fadeUp{
+from{opacity:0;transform:translateY(40px);}
+to{opacity:1;transform:translateY(0);}
+}
+
+.hidden{display:none;}
+
+input{
+width:100%;
+padding:12px;
+border:none;
+border-radius:12px;
+margin-top:15px;
+text-align:center;
+font-size:16px;
+}
+
+button{
+margin-top:15px;
+padding:10px 30px;
+border:none;
+border-radius:30px;
+background:gold;
+font-weight:bold;
+cursor:pointer;
+transition:.3s;
+}
+button:hover{transform:scale(1.08);}
+
+/* Mascot */
+.mascot{
+position:absolute;
+top:-150px;
+left:50%;
+transform:translateX(-50%);
+width:130px;
+height:110px;
+background:#dcdcdc;
+border-radius:12px;
+box-shadow:0 0 30px rgba(255,255,255,0.4);
+animation:bounce 2s infinite;
+}
+@keyframes bounce{
+0%,100%{transform:translateX(-50%) translateY(0);}
+50%{transform:translateX(-50%) translateY(-12px);}
+}
+
+.screen{
+width:85%;
+height:65%;
+background:#000;
+margin:8% auto;
+border-radius:6px;
+position:relative;
+}
+
+.eye{
+width:12px;
+height:12px;
+background:white;
+border-radius:50%;
+position:absolute;
+top:25px;
+animation:blink 4s infinite;
+}
+.eye.left{left:28px;}
+.eye.right{right:28px;}
+
+@keyframes blink{
+0%,90%,100%{height:12px;}
+95%{height:2px;}
+}
+
+.mouth{
+width:30px;
+height:6px;
+background:white;
+position:absolute;
+bottom:18px;
+left:50%;
+transform:translateX(-50%);
+border-radius:20px;
+}
+
+.bubble{
+position:absolute;
+top:-60px;
+left:50%;
+transform:translateX(-50%);
+background:white;
+color:black;
+padding:8px 15px;
+border-radius:20px;
+font-size:14px;
+white-space:nowrap;
+}
+
+/* COUNTDOWN */
+#countdown{
+margin-top:10px;
+font-size:14px;
+color:gold;
+}
+
+/* Golden Final */
+.gold{
+background:linear-gradient(45deg,#1a1a1a,#3a2c00);
+box-shadow:0 0 80px gold;
+}
+
+.final-section {
+    text-align: center;
+    margin-top: 50px;
+    animation: fadeIn 2s ease-in-out;
+}
+
+.invite-text {
+    font-size: 36px;
+    color: gold;
+    margin-bottom: 30px;
+    text-shadow: 0 0 20px rgba(255,215,0,0.8);
+}
+
+.download-btn {
+    padding: 15px 35px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    background: linear-gradient(45deg, gold, orange);
+    color: black;
+    transition: 0.4s;
+    box-shadow: 0 0 25px gold;
+}
+
+.download-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 40px orange;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Canvas */
+canvas{
+position:fixed;
+top:0;
+left:0;
+pointer-events:none;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="particles"></canvas>
+<canvas id="confetti"></canvas>
+<canvas id="fireworks"></canvas>
+
+<!-- NAME SCREEN -->
+<div class="card" id="nameCard">
+<h2>Welcome to the Experience</h2>
+<p>Enter Your Name</p>
+<input type="text" id="username" placeholder="Your Name">
+<button onclick="startGame()">Begin</button>
+<div id="countdown"></div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="card hidden" id="gameCard">
+<div class="mascot">
+<div class="bubble" id="bubbleText">Hello!</div>
+<div class="screen">
+<div class="eye left"></div>
+<div class="eye right"></div>
+<div class="mouth"></div>
+</div>
+</div>
+
+<h2 id="question" style="margin-top:40px;"></h2>
+<input type="text" id="answer" placeholder="Your Answer">
+<button onclick="checkAnswer()">Submit</button>
+<p id="message" style="margin-top:10px;color:#ffcccb;"></p>
+</div>
+
+<!-- FINAL INVITATION SECTION -->
+<div class="card hidden gold" id="finalCard">
+<h2 id="finalMessage"></h2>
+<br>
+    <button class="download-btn" onclick="downloadCard()">
+        Get Your Invitation Card
+    </button>
+</div>
+
+<script>
+let name="";
+let current=0;
+let wrongCount=0;
+
+const questions=[
+"Which Department is the Best in our College?",
+"Which Department Always Rocks Every Event?",
+"Which Department Leads with Creativity and Excellence?",
+"Which Department is Inviting You to a Grand Celebration?"
+];
+
+const wrongResponses=[
+[
+(n)=>`${n}, that department is good... but not THE best 😉`,
+(n)=>`Nice try ${n}, but think legendary!`,
+(n)=>`Hmm ${n}… campus is whispering something else 😏`,
+(n)=>`${n}, starts with C... ends with E...`
+],
+[
+(n)=>`${n}, events tremble when one department enters 😎`,
+(n)=>`Think louder ${n}!`,
+(n)=>`Nope ${n}, rockstars only!`,
+(n)=>`${n}, creativity is calling you...`
+],
+[
+(n)=>`Leadership level high ${n}!`,
+(n)=>`${n}, excellence has only one home.`,
+(n)=>`Try again ${n}, innovation is key.`,
+(n)=>`${n}, almost there!`
+],
+[
+(n)=>`${n}, invitation is from champions.`,
+(n)=>`Not quite ${n}, think grand!`,
+(n)=>`${n}, celebration belongs to legends.`,
+(n)=>`One last try ${n}!`
+]
+];
+
+function typeQuestion(text,i=0){
+if(i<text.length){
+document.getElementById("question").innerHTML+=text.charAt(i);
+setTimeout(()=>typeQuestion(text,i+1),35);
+}
+}
+
+function startGame(){
+name=document.getElementById("username").value.trim();
+if(name===""){alert("Enter name");return;}
+document.getElementById("nameCard").classList.add("hidden");
+document.getElementById("gameCard").classList.remove("hidden");
+document.getElementById("bubbleText").innerText=`Welcome ${name}!`;
+loadQuestion();
+}
+
+function loadQuestion(){
+wrongCount=0;
+document.getElementById("question").innerHTML="";
+typeQuestion(questions[current]);
+document.getElementById("answer").value="";
+document.getElementById("message").innerText="";
+}
+
+function checkAnswer(){
+let ans=document.getElementById("answer").value.trim().toUpperCase();
+if(ans==="CME"){
+current++;
+if(current<questions.length){
+loadQuestion();
+}else{
+showFinal();
+}
+}else{
+let responses=wrongResponses[current];
+let responseIndex=wrongCount%4;
+document.getElementById("message").innerText=responses[responseIndex](name);
+wrongCount++;
+}
+}
+
+function showFinal(){
+document.getElementById("gameCard").classList.add("hidden");
+document.getElementById("finalCard").classList.remove("hidden");
+document.getElementById("finalMessage").innerHTML=
+`🎉 Hey ${name}! <br><br> We Cordially Invite You to the Grand <br><br><strong>CME Department Annual Day Celebrations</strong><br><br>Saturday, 28 February`;
+startConfetti();
+startFireworks();
+}
+
+/* COUNTDOWN TIMER */
+let eventDate=new Date("Feb 28, 2026 10:00:00").getTime();
+setInterval(()=>{
+let now=new Date().getTime();
+let diff=eventDate-now;
+let days=Math.floor(diff/(1000*60*60*24));
+document.getElementById("countdown").innerText="Countdown: "+days+" Days Remaining";
+},1000);
+
+/* PARTICLES */
+const pCanvas=document.getElementById("particles");
+const pctx=pCanvas.getContext("2d");
+pCanvas.width=window.innerWidth;
+pCanvas.height=window.innerHeight;
+let stars=[];
+for(let i=0;i<120;i++){
+stars.push({x:Math.random()*pCanvas.width,y:Math.random()*pCanvas.height,r:Math.random()*2});
+}
+function animateStars(){
+pctx.clearRect(0,0,pCanvas.width,pCanvas.height);
+pctx.fillStyle="white";
+stars.forEach(s=>{
+pctx.beginPath();
+pctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+pctx.fill();
+});
+requestAnimationFrame(animateStars);
+}
+animateStars();
+
+/* CONFETTI */
+const confetti=document.getElementById("confetti");
+const cctx=confetti.getContext("2d");
+confetti.width=window.innerWidth;
+confetti.height=window.innerHeight;
+let confettiPieces=[];
+function startConfetti(){
+for(let i=0;i<150;i++){
+confettiPieces.push({
+x:Math.random()*confetti.width,
+y:Math.random()*confetti.height,
+size:Math.random()*8+2,
+speedY:Math.random()*3+2
+});
+}
+requestAnimationFrame(updateConfetti);
+}
+function updateConfetti(){
+cctx.clearRect(0,0,confetti.width,confetti.height);
+cctx.fillStyle="gold";
+confettiPieces.forEach(p=>{
+cctx.fillRect(p.x,p.y,p.size,p.size);
+p.y+=p.speedY;
+if(p.y>confetti.height)p.y=0;
+});
+requestAnimationFrame(updateConfetti);
+}
+
+/* FIREWORKS */
+const fire=document.getElementById("fireworks");
+const fctx=fire.getContext("2d");
+fire.width=window.innerWidth;
+fire.height=window.innerHeight;
+let particles=[];
+function startFireworks(){
+for(let i=0;i<200;i++){
+particles.push({
+x:fire.width/2,
+y:fire.height/2,
+angle:Math.random()*2*Math.PI,
+speed:Math.random()*5+2,
+radius:2
+});
+}
+requestAnimationFrame(updateFire);
+}
+function updateFire(){
+fctx.clearRect(0,0,fire.width,fire.height);
+fctx.fillStyle="orange";
+particles.forEach(p=>{
+p.x+=Math.cos(p.angle)*p.speed;
+p.y+=Math.sin(p.angle)*p.speed;
+fctx.beginPath();
+fctx.arc(p.x,p.y,p.radius,0,Math.PI*2);
+fctx.fill();
+});
+requestAnimationFrame(updateFire);
+}
+
+function downloadCard() {
+    const link = document.createElement("a");
+
+    // 🔥 REPLACE THIS WITH YOUR ACTUAL FILE PATH
+    link.href = "InvitationCard.jpg";
+
+    link.download = "CME_Annual_Day_Invitation.pdf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+</script>
+
+</body>
+</html>
